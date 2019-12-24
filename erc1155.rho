@@ -1,0 +1,167 @@
+new basket,
+  publicKeyCh,
+  tokens,
+  tokens_data,
+  tokens_available,
+
+  entry,
+  entryUriCh,
+
+  transferToken,
+  createToken,
+  purchaseToken,
+
+  stdout(`rho:io:stdout`),
+  insertArbitrary(`rho:registry:insertArbitrary`),
+  deployerIdCh(`rho:rchain:deployerId`)
+in {
+  publicKeyCh!!(*deployerIdCh) |
+
+  /*
+    tokens: {
+      [id: string (unique id)]: {
+        owner: string (public key),
+        n: number (item id)
+      }
+    }
+  */
+  tokens!({}) |
+  /*
+    tokens_data: {
+      [n: number (item id)]: string (unforgeable name)
+    }
+  */
+  tokens_data!({}) |
+  /*
+    tokens_available: {
+      [n: number (item id)]: number (quantity)
+    }
+  */
+  tokens_available!({}) |
+
+  // TRANSFER_TOKEN
+  for (@(payload, return) <= transferToken) {
+    stdout!("transferToken")
+  } |
+
+  // CREATE_TOKEN
+  for (@(payload, return) <= createToken) {
+    new createTokenDeployerIdCh(`rho:rchain:deployerId`) in {
+      for (@publicKey <- publicKeyCh) {
+        stdout!(publicKey) |
+        stdout!(*createTokenDeployerIdCh) |
+        match (*createTokenDeployerIdCh) {
+          // BUG : always true no matter who deploys
+          publicKey => {
+            for (@current <- tokens_available) {
+              match current.size() {
+                n => {
+                  tokens_available!(
+                    current.set(n, payload.get("quantity"))
+                  ) |
+                  for (@current_data <- tokens_data) {
+                    new data in {
+                      data!(payload.get("data")) |
+                      tokens_data!(
+                        current_data.set(n, *data)
+                      )
+                    }
+                  } |
+                  @return!("success : token created")
+                }
+              }
+            }
+          }
+          _ => {
+            @return!("error : unauthorized operation")
+          }
+        }
+      }
+    }
+  } |
+
+  // PURCHASE_TOKEN
+  for (@(payload, return) <= purchaseToken) {
+    for (@current <- tokens_available) {
+      match current.get(payload.get("n")) {
+        Nil => {
+          tokens_available!(current) |
+          @return!("error : token n°" ++ payload.get("n") ++ " does not exist")
+        }
+        _ => {
+          match current.get(payload.get("n")).get("quantity") {
+            0 => {
+              tokens_available!(current) |
+              @return!("error : no tokens n°" ++ payload.get("n") ++ " not available")
+            }
+            _ => {
+              for (@tokens_current <- tokens) {
+                match tokens_current.get(payload.get("unique_id")) {
+                  Nil => {
+                    tokens!(
+                      tokens_current.set(
+                        payload.get("unique_id"),
+                        {
+                          "n": payload.get("n"),
+                          "owner": "PUBLIC_KEY"
+                        }
+                      )
+                    ) |
+                    tokens_available!(
+                      current.set(
+                        payload.get("n"),
+                        {
+                          "quantity": current.get(payload.get("n")).get("quantity") - 1,
+                          "token": current.get(payload.get("n")).get("token")
+                        }
+                      )
+                    ) |
+                    @return!("success : token purchased")
+                  }
+                  _ => {
+                    tokens!(tokens_current) |
+                    @return!("error : unique id already exists")
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  // ENTRY
+  for (@(action, return) <= entry) {
+    match action.get("type") {
+      "TRANSFER_TOKEN" => {
+        transferToken!((action.get("payload"), return))
+      }
+      "CREATE_TOKEN" => {
+        createToken!((action.get("payload"), return))
+      }
+      "PURCHASE_TOKEN" => {
+        purchaseToken!((action.get("payload"), return))
+      }
+    }
+  } |
+
+  // Expose entry channel to the registry
+  insertArbitrary!(*entry, *entryUriCh) |
+
+  for (uri <- entryUriCh) {
+    basket!({
+      "registry_uri": *uri,
+      "tokens": *tokens,
+      "tokens_available": *tokens_available,
+      "tokens_data": *tokens_data
+    }) |
+    stdout!({
+      "registry_uri": *uri,
+      "tokens": *tokens,
+      "tokens_available": *tokens_available,
+      "tokens_data": *tokens_data
+    })
+  }
+
+}

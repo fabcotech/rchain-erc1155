@@ -1,0 +1,24 @@
+new entryCh,
+  lookup(`rho:registry:lookup`),
+  stdout(`rho:io:stdout`)
+in {
+  
+  lookup!(`rho:id:REGISTRY_URI`, *entryCh) |
+
+  for(entry <- entryCh) {
+    entry!((
+      {
+        "type": "CREATE_TOKEN",
+        "payload": {
+          "quantity": 100,
+          "data": {
+            "name": "Ichor of Illumination",
+            "description": "Ichor of Illumination was a consumable item in League of Legends. It was exclusive to the Twisted Treeline.",
+            "img": ""
+          }
+        }
+      },
+      *stdout
+    ))
+  }
+}

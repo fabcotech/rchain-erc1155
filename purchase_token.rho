@@ -1,0 +1,20 @@
+new entryCh,
+  lookup(`rho:registry:lookup`),
+  stdout(`rho:io:stdout`)
+in {
+  
+  lookup!(`rho:id:REGISTRY_URI`, *entryCh) |
+
+  for(entry <- entryCh) {
+    entry!((
+      {
+        "type": "PURCHASE_TOKEN",
+        "payload": {
+          "n": 0,
+          "unique_id": "aaa"
+        }
+      },
+      *stdout
+    ))
+  }
+}
