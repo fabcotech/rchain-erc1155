@@ -1,24 +1,27 @@
-new entryCh,
+new basket,
+  entryCh,
   lookup(`rho:registry:lookup`),
   stdout(`rho:io:stdout`)
 in {
-  
-  lookup!(`rho:id:REGISTRY_URI`, *entryCh) |
+
+  lookup!(`rho:id:qapajksrp3ixrwmsa3pfs86j16sdq3i4uincciarw8udk31hmeambw`, *entryCh) |
 
   for(entry <- entryCh) {
-    entry!((
+    entry!(
       {
-        "type": "CREATE_TOKEN",
+        "type": "CREATE",
         "payload": {
-          "quantity": 100,
+          "quantity": 200,
           "data": {
-            "name": "Ichor of Illumination",
+            "name": "Ichor of Illumination 2",
             "description": "Ichor of Illumination was a consumable item in League of Legends. It was exclusive to the Twisted Treeline.",
-            "img": ""
+            "img": "base64:sdjzaiosdjzaisjaziosajiozi"
           }
         }
       },
       *stdout
-    ))
-  }
+    )
+  } |
+
+  basket!({ "status": "completed" })
 }
