@@ -1,21 +1,130 @@
-new basket, entryCh, lookup(`rho:registry:lookup`), stdout(`rho:io:stdout`) in {
 
-  lookup!(`rho:id:qapajksrp3ixrwmsa3pfs86j16sdq3i4uincciarw8udk31hmeambw`, *entryCh) |
+new
+  revVaultPurseCh,
+  priceCh,
+  quantityCh,
+  publicKeyCh,
+  returnCh,
+  uniqueIdCh,
+  registryUriCh,
+  revAddressCh,
+  registryLookup(`rho:registry:lookup`),
+  stdout(`rho:io:stdout`),
+  revAddress(`rho:rev:address`)
+in {
 
-  for(entry <- entryCh) {
-    entry!(
-      {
-        "type": "PURCHASE",
-        "payload": {
-          "quantity": 2,
-          "n": 0,
-          "publicKey": "04b50dbf4e03cf9abe39238086ca74f53a9ec9f1b68efc6376cb0cd88dd263ea7b987c5a0f3c655252abdfac247d8eb76b3c93f95bbc61467a0dc78c8d32a5bbb7",
+  /*
+    The 5 following values must be filled with proper values
+  */ 
+  // Registry URI of the ERC-1155 contract
+  registryUriCh!!(`rho:id:6kx95szt8xi15n3sykjya7iz6hby5siueh46m8ftt5bqyqq7g1b6pz`) |
+  // Unique ID of the token you want to purchase
+  uniqueIdCh!!(0) |
+  // Per token price, make sure it is accurate
+  priceCh!!(2) |
+  // Quantity you want to purchase, make sure enough are available
+  quantityCh!!(4) |
+  // Your public key
+  publicKeyCh!!("04d6b91520395ab36b06629d067fa881d098e164b337395ff93b22ddb0e46112275016700aa801754e32bc94668c0083856de0799017966419a59361c797d00a3e") |
+
+  registryLookup!(`rho:rchain:revVault`, *revVaultPurseCh) |
+
+  /*
+    Create a vault/purse that is just used once (purse)
+  */
+  for(@(_, *RevVaultPurse) <- revVaultPurseCh) {
+    new unf, purseRevAddrCh, purseAuthKeyCh, vaultCh, revAddressCh in {
+      revAddress!("fromUnforgeable", *unf, *purseRevAddrCh) |
+      RevVaultPurse!("unforgeableAuthKey", *unf, *purseAuthKeyCh) |
+      for (@purseAuthKey <- purseAuthKeyCh; @purseRevAddr <- purseRevAddrCh) {
+
+        stdout!({"new purse rev addr": purseRevAddr, "purse authKey": purseAuthKey}) |
+
+        RevVaultPurse!("findOrCreate", purseRevAddr, *vaultCh) |
+
+        for (
+          @(true, *vault) <- vaultCh;
+          @publicKey <- publicKeyCh;
+          @uniqueId <- uniqueIdCh;
+          @registryUri <- registryUriCh;
+          @price <- priceCh;
+          @quantity <- quantityCh
+        ) {
+
+          revAddress!("fromPublicKey", publicKey.hexToBytes(), *revAddressCh) |
+
+          new RevVaultCh in {
+
+            registryLookup!(`rho:rchain:revVault`, *RevVaultCh) |
+            for (@(_, RevVault) <- RevVaultCh; deployerRevAddress <- revAddressCh) {
+
+              stdout!(("3.transfer_funds.rho")) |
+
+              /*
+                Put price * quantity REV in the purse
+              */
+              match (
+                *deployerRevAddress,
+                purseRevAddr,
+                price * quantity
+              ) {
+                (from, to, amount) => {
+
+                  new vaultCh, revVaultkeyCh, deployerId(`rho:rchain:deployerId`) in {
+                    @RevVault!("findOrCreate", from, *vaultCh) |
+                    @RevVault!("deployerAuthKey", *deployerId, *revVaultkeyCh) |
+                    for (@(true, vault) <- vaultCh; key <- revVaultkeyCh) {
+
+                      stdout!(("Beginning transfer of ", amount, "REV from", from, "to", to)) |
+
+                      new resultCh, entryCh in {
+                        @vault!("transfer", to, amount, *key, *resultCh) |
+                        for (@result <- resultCh) {
+
+                          stdout!(("Finished transfer of ", amount, "REV to", to, "result was:", result)) |
+                          match result {
+                            (true, Nil) => {
+                              stdout!("yes") |
+                              registryLookup!(registryUri, *entryCh) |
+
+                              for(entry <- entryCh) {
+                                stdout!(("GET ENTRY", *entry)) |
+                                entry!(
+                                  {
+                                    "type": "PURCHASE",
+                                    "payload": {
+                                      "quantity": quantity,
+                                      "uniqueId": uniqueId,
+                                      "publicKey": publicKey,
+                                      "purseRevAddr": purseRevAddr,
+                                      "purseAuthKey": purseAuthKey
+                                    }
+                                  },
+                                  *returnCh
+                                ) |
+                                for (resp <- returnCh) {
+                                  match *resp {
+                                    String => { stdout!(*resp) }
+                                    true => { stdout!("success, purchase successful") }
+                                  }
+                                }
+                              }
+                            }
+                            _ => {
+                              stdout!(result) |
+                              stdout!("no")
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
-      },
-      *stdout
-    )
-  } |
-
-  basket!({ "status": "completed" })
-
+      }
+    }
+  }
 }

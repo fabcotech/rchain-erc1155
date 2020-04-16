@@ -9,19 +9,22 @@ new
   verifySignatureCh,
   tokens,
   tokensData,
-  tokensAvailable,
+  verifySignatureAndUpdateNonceCh,
   insertArbitrary(`rho:registry:insertArbitrary`),
   stdout(`rho:io:stdout`),
   secpVerify(`rho:crypto:secp256k1Verify`),
-  blake2b256(`rho:crypto:blake2b256Hash`)
+  blake2b256(`rho:crypto:blake2b256Hash`),
+  revAddress(`rho:rev:address`),
+  registryLookup(`rho:registry:lookup`)
 in {
 
 
   /*
     tokens: {
-      [id: number (incremental id)]: {
+      [uniqueId: number (incremental id)]: {
         publicKey: string (public key),
-        n: number (token id),
+        n: Nil \/ number (token id),
+        price: Nil \/ Int
         quantity: number
       }
     }
@@ -35,33 +38,102 @@ in {
   */
   tokensData!({}) |
 
-  /*
-    tokensAvailable: {
-      [n: number (token id)]: number (quantity)
+  for (@(payload, returnCh) <= verifySignatureAndUpdateNonceCh) {
+    match payload {
+      { "newNonce": String, "signature": String} => {
+        for (@current <<- filesModuleCh) {
+          blake2b256!(
+            current.get("nonce").toUtf8Bytes(),
+            *hashCh
+          ) |
+          for (@hash <- hashCh) {
+            secpVerify!(
+              hash,
+              payload.get("signature").hexToBytes(),
+              current.get("publicKey").hexToBytes(),
+              *verifySignatureCh
+            )
+          } |
+          for (@result <- verifySignatureCh) {
+            match result {
+              true => {
+                @returnCh!(true) |
+                for (@c <- filesModuleCh) {
+                  filesModuleCh!(c.set("nonce", payload.get("newNonce")))
+                }
+              }
+              false => {
+                @returnCh!("error: Invalid signature, could not change price")
+              }
+            }
+          }
+        }
+      }
+      _ => {
+        @returnCh!("error: invalid payload, structure should be { \"newNonce\": String, \"signature\": String }")
+      }
     }
-  */
-  tokensAvailable!({}) |
+  } |
 
   // add a token (1 or more)
   contract createTokenCh(payload, return) = {
     stdout!("createTokenCh") |
 
-    for (@currentTokensAvailable <- tokensAvailable) {
-      stdout!("currentTokensAvailable") |
-      stdout!(currentTokensAvailable) |
-      match currentTokensAvailable.size() {
-        n => {
-          tokensAvailable!(
-            currentTokensAvailable.set(n, *payload.get("quantity"))
-          ) |
-          for (@currentTokensData <- tokensData) {
-            stdout!("currentTokensData") |
-            stdout!(currentTokensData) |
-            tokensData!(
-              currentTokensData.set(n, *payload.get("data"))
-            )
-          } |
-          return!("success : token created")
+    for (@currentTokens <- tokens) {
+      new verifyCh in {
+        verifySignatureAndUpdateNonceCh!((
+          {
+            "newNonce": *payload.get("newNonce"),
+            "signature": *payload.get("signature"),
+          },
+          *verifyCh
+        )) |
+        for (@verifyResult <- verifyCh) {
+          match verifyResult {
+            true => {
+              match currentTokens.size() {
+                uniqueId => {
+                  new nCh in {
+
+                    match *payload.get("n") {
+                      // token n already exists
+                      Int => { nCh!(*payload.get("n")) }
+                      // token n does not exist, unique ID will be used as n
+                      _ => { nCh!(uniqueId) }
+                    } |
+
+                    for (@n <- nCh) {
+
+                      tokens!(
+                        currentTokens.set(uniqueId, {
+                          "quantity": *payload.get("quantity"),
+                          "publicKey": *payload.get("publicKey"),
+                          "n": n,
+                          "price": *payload.get("price"),
+                        })
+                      ) |
+
+                      match *payload.get("data") {
+                        Nil => {}
+                        data => {
+                          for (@currentTokensData <- tokensData) {
+                            tokensData!(
+                              currentTokensData.set(n, data)
+                            )
+                          }
+                        }
+                      } |
+
+                      return!(true)
+                    }
+                  }
+                }
+              }
+            }
+            err => {
+              return!(err)
+            }
+          }
         }
       }
     }
@@ -71,35 +143,67 @@ in {
   contract purchaseCh(payload, return) = {
     stdout!("purchaseCh") |
 
-    for (@currentTokensAvailable <- tokensAvailable) {
-      match currentTokensAvailable.get(*payload.get("n")) {
+    for (@currentTokens <- tokens) {
+      match currentTokens.get(*payload.get("uniqueId")) {
         Nil => {
-          tokensAvailable!(currentTokensAvailable) |
-          return!("error : token n°" ++ *payload.get("n") ++ " does not exist")
+          tokens!(currentTokens) |
+          return!("error : token (unique ID) " ++ *payload.get("uniqueId") ++ " does not exist")
         }
-        _ => {
-          match currentTokensAvailable.get(*payload.get("n")) - *payload.get("quantity") >= 0 {
+        token => {
+          match token.get("quantity") - *payload.get("quantity") >= 0 {
             false => {
-              tokensAvailable!(currentTokensAvailable) |
-              return!("error : no tokens n°" ++ *payload.get("n") ++ " not available")
+              tokens!(currentTokens) |
+              return!("error : not enough tokens (unique ID) " ++ *payload.get("uniqueId") ++ " available")
             }
             true => {
-              for (@currentTokens <- tokens) {
-                match currentTokens.size() {
-                  size => {
-                    tokens!(
-                      currentTokens.set(
-                        size,
-                        *payload
-                      )
-                    ) |
-                    tokensAvailable!(
-                      currentTokensAvailable.set(
-                        *payload.get("n"),
-                        currentTokensAvailable.get(*payload.get("n")) - *payload.get("quantity")
-                      )
-                    ) |
-                    return!(true)
+
+              new RevVaultCh, ownerRevAddressCh in {
+
+                registryLookup!(`rho:rchain:revVault`, *RevVaultCh) |
+                revAddress!("fromPublicKey", token.get("publicKey").hexToBytes(), *ownerRevAddressCh) |
+
+                for (@(_, RevVault) <- RevVaultCh; @ownerRevAddress <- ownerRevAddressCh) {
+                  match (
+                    *payload.get("purseRevAddr"),
+                    ownerRevAddress,
+                    *payload.get("quantity") * token.get("price")
+                  ) {
+                    (from, to, amount) => {
+
+                      new purseVaultCh in {
+                        @RevVault!("findOrCreate", from, *purseVaultCh) |
+                        for (@(true, purseVault) <- purseVaultCh) {
+
+                          new resultCh in {
+                            @purseVault!("transfer", to, amount, *payload.get("purseAuthKey"), *resultCh) |
+                            for (@result <- resultCh) {
+
+                              match result {
+                                (true, Nil) => {
+                                  match currentTokens.size() {
+                                    uniqueId => {
+                                      tokens!(
+                                        currentTokens.set(uniqueId, {
+                                          "quantity": *payload.get("quantity"),
+                                          "publicKey": *payload.get("publicKey"),
+                                          "n": token.get("n"),
+                                          "price": Nil,
+                                        })
+                                      ) |
+                                      return!(true)
+                                    }
+                                  }
+                                }
+                                _ => {
+                                  tokens!(currentTokens) |
+                                  return!("error : REV transfer went wrong " ++ result.nth(2))
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -112,11 +216,6 @@ in {
 
   contract entryCh(action, return) = {
     match *action.get("type") {
-      "READ_TOKENS_AVAILABLE" => {
-        for (@currentTokensAvailable <<- tokensAvailable) {
-          return!(currentTokensAvailable)
-        }
-      }
       "READ_TOKENS" => {
         for (currentTokens <<- tokens) {
           return!(*currentTokens)
@@ -132,19 +231,19 @@ in {
           return!(*current)
         }
       }
-      "CREATE" => {
+      "CREATE_TOKEN" => {
         match *action.get("payload") {
-          { "quantity": Int, "data": _ } => {
+          { "signature": String, "newNonce": String, "quantity": Int, "publicKey": String, "price": Nil \/ Int, "n": Nil \/ Int, "data": _ } => {
             createTokenCh!(*action.get("payload"), *return)
           }
           _ => {
-            return!("error: invalid payload, structure should be { \"quantity\": Int, \"data\": _ }")
+            return!("error: invalid payload, structure should be { \"quantity\": Int, \"n\": Nil or Int, \"price\": Nil or Int, \"publicKey\": String, \"data\": _ }")
           }
         }
       }
       "PURCHASE" => {
         match *action.get("payload") {
-          { "quantity": Int, "n": Int, "publicKey": String } => {
+          { "quantity": Int, "uniqueId": Int, "publicKey": String, "purseRevAddr": _, "purseAuthKey": _ } => {
             purchaseCh!(*action.get("payload"), *return)
           }
           _ => {
@@ -164,12 +263,14 @@ in {
 
     filesModuleCh!({
       "registryUri": *entryUri,
+      "locked": false,
       "publicKey": "PUBLIC_KEY",
       "nonce": "NONCE",
       "version": "0.1"
     }) |
     stdout!({
       "registryUri": *entryUri,
+      "locked": false,
       "publicKey": "PUBLIC_KEY",
       "nonce": "NONCE",
       "version": "0.1"

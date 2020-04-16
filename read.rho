@@ -3,12 +3,12 @@ new entryCh,
   stdout(`rho:io:stdout`)
 in {
   
-  lookup!(`rho:id:qapajksrp3ixrwmsa3pfs86j16sdq3i4uincciarw8udk31hmeambw`, *entryCh) |
+  lookup!(`rho:id:apdmwj6kewtrbu4bnqigdkixbru9u5bkmf9xud3r8tshjq9uexoz3t`, *entryCh) |
 
   for(entry <- entryCh) {
     entry!(
       {
-        "type": "READ_TOKENS_AVAILABLE",
+        "type": "READ",
       },
       *stdout
     )
