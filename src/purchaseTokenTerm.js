@@ -97,7 +97,7 @@ module.exports.purchaseTokenTerm = (
                                   stdout!(("GET ENTRY", *entry)) |
                                   entry!(
                                     {
-                                      "type": "PURCHASE",
+                                      "type": "PURCHASE_TOKEN",
                                       "payload": {
                                         "quantity": quantity,
                                         "uniqueId": uniqueId,

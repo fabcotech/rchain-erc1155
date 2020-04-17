@@ -25,7 +25,7 @@ in {
   // Quantity you want to purchase, make sure enough are available
   quantityCh!!(4) |
   // Your public key
-  publicKeyCh!!("04d6b91520395ab36b06629d067fa881d098e164b337395ff93b22ddb0e46112275016700aa801754e32bc94668c0083856de0799017966419a59361c797d00a3e") |
+  publicKeyCh!!("PUBLIC_KEY") |
 
   registryLookup!(`rho:rchain:revVault`, *revVaultPurseCh) |
 
@@ -91,7 +91,7 @@ in {
                                 stdout!(("GET ENTRY", *entry)) |
                                 entry!(
                                   {
-                                    "type": "PURCHASE",
+                                    "type": "PURCHASE_TOKEN",
                                     "payload": {
                                       "quantity": quantity,
                                       "uniqueId": uniqueId,

@@ -1,9 +1,10 @@
 new 
-  filesModuleCh,
+  mainCh,
   createTokenCh,
   purchaseCh,
   entryCh,
   entryUriCh,
+  setLockedCh,
   updateUriCh,
   hashCh,
   verifySignatureCh,
@@ -41,7 +42,7 @@ in {
   for (@(payload, returnCh) <= verifySignatureAndUpdateNonceCh) {
     match payload {
       { "newNonce": String, "signature": String} => {
-        for (@current <<- filesModuleCh) {
+        for (@current <<- mainCh) {
           blake2b256!(
             current.get("nonce").toUtf8Bytes(),
             *hashCh
@@ -58,8 +59,8 @@ in {
             match result {
               true => {
                 @returnCh!(true) |
-                for (@c <- filesModuleCh) {
-                  filesModuleCh!(c.set("nonce", payload.get("newNonce")))
+                for (@c <- mainCh) {
+                  mainCh!(c.set("nonce", payload.get("newNonce")))
                 }
               }
               false => {
@@ -75,63 +76,108 @@ in {
     }
   } |
 
+  contract setLockedCh(payload, return) = {
+    stdout!("setLockedCh") |
+
+    for (@current <<- mainCh) {
+      match current.get("locked") {
+        true => {
+          return!("error: contract is already locked")
+        }
+        false => {
+          new verifyCh in {
+            verifySignatureAndUpdateNonceCh!((
+              {
+                "newNonce": *payload.get("newNonce"),
+                "signature": *payload.get("signature"),
+              },
+              *verifyCh
+            )) |
+            for (@verifyResult <- verifyCh) {
+              match verifyResult {
+                true => {
+                  for (@c <- mainCh) {
+                    mainCh!(c.set("locked", true))
+                  } |
+                  return!(true)
+                }
+                err => {
+                  return!(err)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } |
+
   // add a token (1 or more)
   contract createTokenCh(payload, return) = {
     stdout!("createTokenCh") |
 
-    for (@currentTokens <- tokens) {
-      new verifyCh in {
-        verifySignatureAndUpdateNonceCh!((
-          {
-            "newNonce": *payload.get("newNonce"),
-            "signature": *payload.get("signature"),
-          },
-          *verifyCh
-        )) |
-        for (@verifyResult <- verifyCh) {
-          match verifyResult {
-            true => {
-              match currentTokens.size() {
-                uniqueId => {
-                  new nCh in {
+    for (@current <<- mainCh) {
+      match current.get("locked") {
+        true => {
+          return!("error: contract is locked, cannot create token")
+        }
+        false => {
+          for (@currentTokens <- tokens) {
+            new verifyCh in {
+              verifySignatureAndUpdateNonceCh!((
+                {
+                  "newNonce": *payload.get("newNonce"),
+                  "signature": *payload.get("signature"),
+                },
+                *verifyCh
+              )) |
+              for (@verifyResult <- verifyCh) {
+                match verifyResult {
+                  true => {
+                    match currentTokens.size() {
+                      uniqueId => {
+                        new nCh in {
 
-                    match *payload.get("n") {
-                      // token n already exists
-                      Int => { nCh!(*payload.get("n")) }
-                      // token n does not exist, unique ID will be used as n
-                      _ => { nCh!(uniqueId) }
-                    } |
+                          match *payload.get("n") {
+                            // token n already exists
+                            Int => { nCh!(*payload.get("n")) }
+                            // token n does not exist, unique ID will be used as n
+                            _ => { nCh!(uniqueId) }
+                          } |
 
-                    for (@n <- nCh) {
+                          for (@n <- nCh) {
 
-                      tokens!(
-                        currentTokens.set(uniqueId, {
-                          "quantity": *payload.get("quantity"),
-                          "publicKey": *payload.get("publicKey"),
-                          "n": n,
-                          "price": *payload.get("price"),
-                        })
-                      ) |
+                            tokens!(
+                              currentTokens.set(uniqueId, {
+                                "quantity": *payload.get("quantity"),
+                                "publicKey": *payload.get("publicKey"),
+                                "n": n,
+                                "price": *payload.get("price"),
+                              })
+                            ) |
 
-                      match *payload.get("data") {
-                        Nil => {}
-                        data => {
-                          for (@currentTokensData <- tokensData) {
-                            tokensData!(
-                              currentTokensData.set(n, data)
-                            )
+                            match *payload.get("data") {
+                              Nil => {}
+                              data => {
+                                for (@currentTokensData <- tokensData) {
+                                  tokensData!(
+                                    currentTokensData.set(n, data)
+                                  )
+                                }
+                              }
+                            } |
+
+                            return!(true)
                           }
                         }
-                      } |
-
-                      return!(true)
+                      }
                     }
+                  }
+                  err => {
+                    return!(err)
                   }
                 }
               }
-            }
-            err => {
-              return!(err)
             }
           }
         }
@@ -227,8 +273,18 @@ in {
         }
       }
       "READ" => {
-        for (current <<- filesModuleCh) {
+        for (current <<- mainCh) {
           return!(*current)
+        }
+      }
+      "SET_LOCKED" => {
+        match *action.get("payload") {
+          { "locked": true, "signature": String, "newNonce": String } => {
+            setLockedCh!(*action.get("payload"), *return)
+          }
+          _ => {
+            return!("error: invalid payload, structure should be { \"quantity\": Int, \"n\": Nil or Int, \"price\": Nil or Int, \"publicKey\": String, \"data\": _ }")
+          }
         }
       }
       "CREATE_TOKEN" => {
@@ -241,7 +297,7 @@ in {
           }
         }
       }
-      "PURCHASE" => {
+      "PURCHASE_TOKEN" => {
         match *action.get("payload") {
           { "quantity": Int, "uniqueId": Int, "publicKey": String, "purseRevAddr": _, "purseAuthKey": _ } => {
             purchaseCh!(*action.get("payload"), *return)
@@ -261,7 +317,7 @@ in {
 
   for (entryUri <- entryUriCh) {
 
-    filesModuleCh!({
+    mainCh!({
       "registryUri": *entryUri,
       "locked": false,
       "publicKey": "PUBLIC_KEY",
