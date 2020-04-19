@@ -1,6 +1,8 @@
-#### RCHAIN ERC-1155
+#### Rholang (RChain) ERC-1155
 
 Rholang (RChain) implementation of the ERC-1155 standard .
+
+![Woods](https://images.pexels.com/photos/640809/pexels-photo-640809.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=300)
 
 #### Standard
 
