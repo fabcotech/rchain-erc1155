@@ -1,13 +1,4 @@
-module.exports.createTokenTermDappy = (
-  registryUri,
-  currentNonce,
-  newNonce,
-  publicKey,
-  n,
-  price,
-  quantity,
-  data
-) => {
+module.exports.setLockedTermDappy = (registryUri, currentNonce, newNonce) => {
   return {
     term: `new basket,
       entryCh,
@@ -21,15 +12,11 @@ module.exports.createTokenTermDappy = (
       for(entry <- entryCh) {
         entry!(
           {
-            "type": "CREATE_TOKEN",
+            "type": "SET_LOCKED",
             "payload": {
               "signature": "SIGN",
               "newNonce": "${newNonce || "NONCE"}",
-              "publicKey": "${publicKey}",
-              "price": ${price || "Nil"},
-              "n": ${typeof n == "string" ? '"' + n + '"' : "Nil"},
-              "quantity": ${quantity},
-              "data": ${data ? '"' + encodeURI(data) + '"' : "Nil"}
+              "locked": true
             }
           },
           *returnCh
@@ -39,7 +26,7 @@ module.exports.createTokenTermDappy = (
       for (resp <- returnCh) {
         match *resp {
           String => { stdout!(*resp) }
-          true => { stdout!("success, token created") }
+          true => { stdout!("success, contract locked") }
         }
       } |
     

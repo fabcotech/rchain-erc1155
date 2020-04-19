@@ -5,6 +5,7 @@ new
   entryCh,
   entryUriCh,
   setLockedCh,
+  updateTokenDataCh,
   updateUriCh,
   hashCh,
   verifySignatureCh,
@@ -22,11 +23,11 @@ in {
 
   /*
     tokens: {
-      [uniqueId: number (incremental id)]: {
-        publicKey: string (public key),
-        n: Nil \/ number (token id),
+      [uniqueId: String (incremental id)]: {
+        publicKey: String (public key),
+        n: Nil \/ String (token id),
         price: Nil \/ Int
-        quantity: number
+        quantity: Int
       }
     }
   */
@@ -34,12 +35,13 @@ in {
 
   /*
     tokensData: {
-      [n: number (token id)]: string (unforgeable name)
+      [n: Strig (token id)]: String (registry URI)
     }
   */
   tokensData!({}) |
 
   for (@(payload, returnCh) <= verifySignatureAndUpdateNonceCh) {
+    stdout!("verifySignatureAndUpdateNonceCh") |
     match payload {
       { "newNonce": String, "signature": String} => {
         for (@current <<- mainCh) {
@@ -64,7 +66,7 @@ in {
                 }
               }
               false => {
-                @returnCh!("error: Invalid signature, could not change price")
+                @returnCh!("error: Invalid signature, could not perform operation")
               }
             }
           }
@@ -93,11 +95,49 @@ in {
               },
               *verifyCh
             )) |
-            for (@verifyResult <- verifyCh) {
-              match verifyResult {
+            for (@verified <- verifyCh) {
+              match verified {
                 true => {
                   for (@c <- mainCh) {
                     mainCh!(c.set("locked", true))
+                  } |
+                  return!(true)
+                }
+                err => {
+                  return!(err)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  contract updateTokenDataCh(payload, return) = {
+    stdout!("updateTokenDataCh") |
+
+    for (@current <<- mainCh) {
+      match current.get("locked") {
+        true => {
+          return!("error: contract is locked, cannot update token data")
+        }
+        false => {
+          new verifyCh in {
+            verifySignatureAndUpdateNonceCh!((
+              {
+                "newNonce": *payload.get("newNonce"),
+                "signature": *payload.get("signature"),
+              },
+              *verifyCh
+            )) |
+            for (@verified <- verifyCh) {
+              match verified {
+                true => {
+                  for (@currentTokensData <- tokensData) {
+                    tokensData!(
+                      currentTokensData.set(*payload.get("n"), *payload.get("data"))
+                    )
                   } |
                   return!(true)
                 }
@@ -131,16 +171,16 @@ in {
                 },
                 *verifyCh
               )) |
-              for (@verifyResult <- verifyCh) {
-                match verifyResult {
+              for (@verified <- verifyCh) {
+                match verified {
                   true => {
-                    match currentTokens.size() {
+                    match "${n}" %% { "n": currentTokens.size() } {
                       uniqueId => {
                         new nCh in {
 
                           match *payload.get("n") {
                             // token n already exists
-                            Int => { nCh!(*payload.get("n")) }
+                            String => { nCh!(*payload.get("n")) }
                             // token n does not exist, unique ID will be used as n
                             _ => { nCh!(uniqueId) }
                           } |
@@ -226,7 +266,7 @@ in {
 
                               match result {
                                 (true, Nil) => {
-                                  match currentTokens.size() {
+                                  match "${uniqueId}" %% { "uniqueId": currentTokens.size() } {
                                     uniqueId => {
                                       tokens!(
                                         currentTokens.set(uniqueId, {
@@ -287,9 +327,19 @@ in {
           }
         }
       }
+      "UPDATE_TOKEN_DATA" => {
+        match *action.get("payload") {
+          { "signature": String, "newNonce": String, "n": String, "data": _ } => {
+            updateTokenDataCh!(*action.get("payload"), *return)
+          }
+          _ => {
+            return!("error: invalid payload, structure should be { \"quantity\": Int, \"n\": Nil or Int, \"price\": Nil or Int, \"publicKey\": String, \"data\": _ }")
+          }
+        }
+      }
       "CREATE_TOKEN" => {
         match *action.get("payload") {
-          { "signature": String, "newNonce": String, "quantity": Int, "publicKey": String, "price": Nil \/ Int, "n": Nil \/ Int, "data": _ } => {
+          { "signature": String, "newNonce": String, "quantity": Int, "publicKey": String, "price": Nil \/ Int, "n": Nil \/ String, "data": _ } => {
             createTokenCh!(*action.get("payload"), *return)
           }
           _ => {

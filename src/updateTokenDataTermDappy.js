@@ -1,14 +1,12 @@
-module.exports.createTokenTerm = (
+module.exports.updateTokenDataTermDappy = (
   registryUri,
-  signature,
+  currentNonce,
   newNonce,
-  publicKey,
   n,
-  price,
-  quantity,
   data
 ) => {
-  return `new basket,
+  return {
+    term: `new basket,
     entryCh,
     returnCh,
     lookup(\`rho:registry:lookup\`),
@@ -20,14 +18,11 @@ module.exports.createTokenTerm = (
     for(entry <- entryCh) {
       entry!(
         {
-          "type": "CREATE_TOKEN",
+          "type": "UPDATE_TOKEN_DATA",
           "payload": {
-            "signature": "${signature}",
+            "signature": "SIGN",
             "newNonce": "${newNonce}",
-            "publicKey": "${publicKey}",
-            "price": ${price || "Nil"},
-            "n": ${typeof n == "string" ? '"' + n + '"' : "Nil"},
-            "quantity": ${quantity},
+            "n": "${n}",
             "data": ${data ? '"' + encodeURI(data) + '"' : "Nil"}
           }
         },
@@ -38,11 +33,14 @@ module.exports.createTokenTerm = (
     for (resp <- returnCh) {
       match *resp {
         String => { stdout!(*resp) }
-        true => { stdout!("success, token created") }
+        true => { stdout!("success, token data updated") }
       }
     } |
   
     basket!({ "status": "completed" })
-  }
-  `;
+  }`,
+    signatures: {
+      SIGN: currentNonce,
+    },
+  };
 };
