@@ -1,4 +1,5 @@
-new 
+module.exports.erc1155TokenTerm = (nonce, publicKey) => {
+  return `new 
   mainCh,
   createTokenCh,
   purchaseCh,
@@ -12,12 +13,12 @@ new
   tokens,
   tokensData,
   verifySignatureAndUpdateNonceCh,
-  insertArbitrary(`rho:registry:insertArbitrary`),
-  stdout(`rho:io:stdout`),
-  secpVerify(`rho:crypto:secp256k1Verify`),
-  blake2b256(`rho:crypto:blake2b256Hash`),
-  revAddress(`rho:rev:address`),
-  registryLookup(`rho:registry:lookup`)
+  insertArbitrary(\`rho:registry:insertArbitrary\`),
+  stdout(\`rho:io:stdout\`),
+  secpVerify(\`rho:crypto:secp256k1Verify\`),
+  blake2b256(\`rho:crypto:blake2b256Hash\`),
+  revAddress(\`rho:rev:address\`),
+  registryLookup(\`rho:registry:lookup\`)
 in {
 
 
@@ -25,8 +26,8 @@ in {
     tokens: {
       [uniqueId: String (incremental id)]: {
         publicKey: String (public key),
-        n: Nil \/ String (token id),
-        price: Nil \/ Int
+        n: Nil \\/ String (token id),
+        price: Nil \\/ Int
         quantity: Int
       }
     }
@@ -73,7 +74,7 @@ in {
         }
       }
       _ => {
-        @returnCh!("error: invalid payload, structure should be { \"newNonce\": String, \"signature\": String }")
+        @returnCh!("error: invalid payload, structure should be { 'newNonce': String, 'signature': String }")
       }
     }
   } |
@@ -174,7 +175,7 @@ in {
               for (@verified <- verifyCh) {
                 match verified {
                   true => {
-                    match "${n}" %% { "n": currentTokens.size() } {
+                    match "\${n}" %% { "n": currentTokens.size() } {
                       uniqueId => {
                         new nCh in {
 
@@ -228,24 +229,27 @@ in {
   // purchase token (1 or more)
   contract purchaseCh(payload, return) = {
     stdout!("purchaseCh") |
-
+    stdout!(*payload) |
     for (@currentTokens <- tokens) {
+      stdout!(currentTokens) |
+      stdout!(currentTokens.get(*payload.get("uniqueId"))) |
       match currentTokens.get(*payload.get("uniqueId")) {
         Nil => {
           tokens!(currentTokens) |
           return!("error : token (unique ID) " ++ *payload.get("uniqueId") ++ " does not exist")
         }
         token => {
+          stdout!(("purchaseCh", 10)) |
           match token.get("quantity") - *payload.get("quantity") >= 0 {
             false => {
               tokens!(currentTokens) |
               return!("error : not enough tokens (unique ID) " ++ *payload.get("uniqueId") ++ " available")
             }
             true => {
-
+              stdout!(("purchaseCh", 11)) |
               new RevVaultCh, ownerRevAddressCh in {
 
-                registryLookup!(`rho:rchain:revVault`, *RevVaultCh) |
+                registryLookup!(\`rho:rchain:revVault\`, *RevVaultCh) |
                 revAddress!("fromPublicKey", token.get("publicKey").hexToBytes(), *ownerRevAddressCh) |
 
                 for (@(_, RevVault) <- RevVaultCh; @ownerRevAddress <- ownerRevAddressCh) {
@@ -255,7 +259,12 @@ in {
                     *payload.get("quantity") * token.get("price")
                   ) {
                     (from, to, amount) => {
-
+                      stdout!((
+                        4,
+                        *payload.get("purseRevAddr"),
+                        ownerRevAddress,
+                        *payload.get("quantity") * token.get("price")
+                      )) |
                       new purseVaultCh in {
                         @RevVault!("findOrCreate", from, *purseVaultCh) |
                         for (@(true, purseVault) <- purseVaultCh) {
@@ -266,7 +275,7 @@ in {
 
                               match result {
                                 (true, Nil) => {
-                                  match "${uniqueId}" %% { "uniqueId": currentTokens.size() } {
+                                  match "\${uniqueId}" %% { "uniqueId": currentTokens.size() } {
                                     uniqueId => {
                                       tokens!(
                                         // New unique ID for new token ownership
@@ -346,28 +355,11 @@ in {
       }
       "CREATE_TOKEN" => {
         match *action.get("payload") {
-          {
-            "signature": "3045022100c106bed950607ad4c5fdbb254a980450986efbfe50d6a66f41101e1e3e8a62910220128fa98eae3d97c90c83f3013e61d714ebde79b686a1010c8c439673fcfcb509",
-            "newNonce": "a8739b45f74c4340a678ae6b344f4e8a",
-            "publicKey": "04b50dbf4e03cf9abe39238086ca74f53a9ec9f1b68efc6376cb0cd88dd263ea7b987c5a0f3c655252abdfac247d8eb76b3c93f95bbc61467a0dc78c8d32a5bbb7",
-            "price": 1,
-            "n": Nil,
-            "quantity": 1000,
-            "data": "0"
-          }
-          {
-            "signature": String,
-            "newNonce": String,
-            "quantity": Int,
-            "publicKey": String,
-            "price": Nil \/ Int,
-            "n": Nil \/ String,
-            "data": _
-          } => {
+          { "signature": String, "newNonce": String, "quantity": Int, "publicKey": String, "price": Nil \\/ Int, "n": Nil \\/ String, "data": _ } => {
             createTokenCh!(*action.get("payload"), *return)
           }
           _ => {
-            return!("error: invalid payload, structure should be { \"signature\": String, \"newNonce\": String, \"quantity\": Int, \"n\": Nil or String, \"price\": Nil or Int, \"publicKey\": String, \"data\": _ }")
+            return!("error: invalid payload, structure should be { 'signature': String, 'newNonce': String, quantity': Int, 'n': Nil or String, 'price': Nil or Int, 'publicKey': String, 'data': _ }")
           }
         }
       }
@@ -377,7 +369,7 @@ in {
             purchaseCh!(*action.get("payload"), *return)
           }
           _ => {
-            return!("error: invalid payload, structure should be { \"quantity\": Int, \"n\": Int, \"publicKey\": String }")
+            return!("error: invalid payload, structure should be { 'quantity': Int, 'n': Int, 'publicKey': String }")
           }
         }
       }
@@ -394,16 +386,17 @@ in {
     mainCh!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": "PUBLIC_KEY",
-      "nonce": "NONCE",
+      "publicKey": "${publicKey}",
+      "nonce": "${nonce}",
       "version": "0.1"
     }) |
     stdout!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": "PUBLIC_KEY",
-      "nonce": "NONCE",
+      "publicKey": "${publicKey}",
+      "nonce": "${nonce}",
       "version": "0.1"
     })
   }
-}
+}`;
+};

@@ -25,7 +25,7 @@ module.exports.purchaseTokenTerm = (
     // Registry URI of the ERC-1155 contract
     registryUriCh!!(\`rho:id:${registryUri}\`) |
     // Unique ID of the token you want to purchase
-    uniqueIdCh!!(${uniqueId}) |
+    uniqueIdCh!!("${uniqueId}") |
     // Per token price, make sure it is accurate
     priceCh!!(${price}) |
     // Quantity you want to purchase, make sure enough are available
