@@ -228,7 +228,6 @@ in {
   // purchase token (1 or more)
   contract purchaseCh(payload, return) = {
     stdout!("purchaseCh") |
-
     for (@currentTokens <- tokens) {
       match currentTokens.get(*payload.get("uniqueId")) {
         Nil => {
@@ -242,7 +241,6 @@ in {
               return!("error : not enough tokens (unique ID) " ++ *payload.get("uniqueId") ++ " available")
             }
             true => {
-
               new RevVaultCh, ownerRevAddressCh in {
 
                 registryLookup!(`rho:rchain:revVault`, *RevVaultCh) |
@@ -255,7 +253,6 @@ in {
                     *payload.get("quantity") * token.get("price")
                   ) {
                     (from, to, amount) => {
-
                       new purseVaultCh in {
                         @RevVault!("findOrCreate", from, *purseVaultCh) |
                         for (@(true, purseVault) <- purseVaultCh) {
@@ -346,15 +343,6 @@ in {
       }
       "CREATE_TOKEN" => {
         match *action.get("payload") {
-          {
-            "signature": "3045022100c106bed950607ad4c5fdbb254a980450986efbfe50d6a66f41101e1e3e8a62910220128fa98eae3d97c90c83f3013e61d714ebde79b686a1010c8c439673fcfcb509",
-            "newNonce": "a8739b45f74c4340a678ae6b344f4e8a",
-            "publicKey": "04b50dbf4e03cf9abe39238086ca74f53a9ec9f1b68efc6376cb0cd88dd263ea7b987c5a0f3c655252abdfac247d8eb76b3c93f95bbc61467a0dc78c8d32a5bbb7",
-            "price": 1,
-            "n": Nil,
-            "quantity": 1000,
-            "data": "0"
-          }
           {
             "signature": String,
             "newNonce": String,
