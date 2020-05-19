@@ -31,3 +31,11 @@ Through the `entry` channel that is exposed to the registry, any user can intera
 
 - Code the `TRANSFER_TOKEN` behaviour. Simply transfer a set of tokens to another public key, `SPLIT_TOKEN` could use this same method, it splits a set of tokens to two.
 - Maybe a user can be able to pimp a set of tokens, and eventually attach data to it. This would be some additional data to `tokensData` which are defined by the owner. For example I would own a car with properties, and the color could be defined by the user.
+- Exchange capabilities
+
+  "askPublicKey": "aaa",
+  "OfferPublicKey": "bbb",
+  "uniqueIdAsk": [{ "amount": 4, "n": "3" }]
+  "uniqueIdOffer": [{ "amount": 1, "uniqueId": "3" }],
+  "sellerSignature": "aaa",
+  "buyerSignature": "bbbb"

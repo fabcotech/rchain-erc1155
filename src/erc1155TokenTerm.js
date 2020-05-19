@@ -32,14 +32,14 @@ in {
       }
     }
   */
-  tokens!({}) |
+  tokens!({/*DEFAULT_TOKENS*/}) |
 
   /*
     tokensData: {
       [n: Strig (token id)]: String (registry URI)
     }
   */
-  tokensData!({}) |
+  tokensData!({/*DEFAULT_TOKENS_DATA*/}) |
 
   for (@(payload, returnCh) <= verifySignatureAndUpdateNonceCh) {
     stdout!("verifySignatureAndUpdateNonceCh") |
