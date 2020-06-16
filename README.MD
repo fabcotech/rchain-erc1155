@@ -1,4 +1,4 @@
-#### Rholang (RChain) ERC-1155
+#### Rholang (RChain) ERC-1155 (vO.3)
 
 Rholang (RChain) implementation of the ERC-1155 standard .
 
@@ -7,6 +7,8 @@ Rholang (RChain) implementation of the ERC-1155 standard .
 #### Standard
 
 This is a very early stage implementation, it might not respect the ERC-1155 standard in some aspects . The goal is to have this rholang code enriched so it can fit many usecases and be some general purpose token managment contrazct anyone can pimp and deploy.
+
+_Generate all javascript source code _ with `node generateJavascripts.js`
 
 #### Token representation on chain
 

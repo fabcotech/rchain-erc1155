@@ -3,7 +3,7 @@ new entryCh,
   stdout(`rho:io:stdout`)
 in {
   
-  lookup!(`rho:id:qapajksrp3ixrwmsa3pfs86j16sdq3i4uincciarw8udk31hmeambw`, *entryCh) |
+  lookup!(`rho:id:REGISTRY_URI`, *entryCh) |
 
   for(entry <- entryCh) {
     entry!(

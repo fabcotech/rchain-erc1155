@@ -1,6 +1,6 @@
 {
   "name": "rchain-erc1155",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Rholang (RChain) implementation of the ERC-1155 standard .",
   "main": "src/index.js",
   "scripts": {},

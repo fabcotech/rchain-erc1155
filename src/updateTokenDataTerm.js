@@ -1,11 +1,19 @@
-new basket,
+module.exports.updateTokenDataTermTerm = (
+  registryUri,
+  currentNonce,
+  newNonce,
+  n,
+  data    
+) => {
+  return {
+    term: `new basket,
   entryCh,
   returnCh,
-  lookup(`rho:registry:lookup`),
-  stdout(`rho:io:stdout`)
+  lookup(\`rho:registry:lookup\`),
+  stdout(\`rho:io:stdout\`)
 in {
 
-  lookup!(`rho:id:REGISTRY_URI`, *entryCh) |
+  lookup!(\`rho:id:${registryUri}\`, *entryCh) |
 
   for(entry <- entryCh) {
     entry!(
@@ -13,13 +21,13 @@ in {
         "type": "UPDATE_TOKEN_DATA",
         "payload": {
           // signature of the current nonce, with the private key of the owner (generateSignatureForNonce.js)
-          "signature": "SIGNATURE",
+          "signature": "${signature}",
           // new nonce, must be different and random (generateNonce.js)
-          "newNonce": "NEW_NONCE",
+          "newNonce": "${newNonce}",
           // token ID you want to attach data to
-          "n": TOKEN_ID,
+          "n": ${typeof n == "string" ? '"' + n + '"' : "Nil"},
           // data is used only if new token ("n" : Nil)
-          "data": DATA
+          "data": ${data ? '"' + encodeURI(data) + '"' : "Nil"}
         }
       },
       *returnCh
@@ -36,3 +44,7 @@ in {
   basket!({ "status": "completed" })
 
 }
+`,
+    signatures: { SIGN: currentNonce }
+  };
+};

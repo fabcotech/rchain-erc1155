@@ -10,16 +10,20 @@ in {
   for(entry <- entryCh) {
     entry!(
       {
-        "type": "UPDATE_TOKEN_DATA",
+        "type": "SEND_TOKENS",
         "payload": {
           // signature of the current nonce, with the private key of the owner (generateSignatureForNonce.js)
           "signature": "SIGNATURE",
           // new nonce, must be different and random (generateNonce.js)
           "newNonce": "NEW_NONCE",
-          // token ID you want to attach data to
-          "n": TOKEN_ID,
-          // data is used only if new token ("n" : Nil)
-          "data": DATA
+          // bag ID (ex: "0")
+          "bagId": BAG_ID,
+          // quantity of tokens to send
+          "quantity": QUANTITY,
+          // publicKey this send those tokens to (can be the same just split a bag)
+          "publicKey": "PUBLIC_KEY",
+          // data (optional) to be attached to the new bag (in bagsData)
+          "data": BAG_DATA
         }
       },
       *returnCh
@@ -29,7 +33,7 @@ in {
   for (resp <- returnCh) {
     match *resp {
       String => { stdout!(*resp) }
-      true => { stdout!("success, token data updated") }
+      true => { stdout!("success, tokens sent") }
     }
   } |
 

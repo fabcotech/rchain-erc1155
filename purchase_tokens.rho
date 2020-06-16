@@ -4,8 +4,10 @@ new
   priceCh,
   quantityCh,
   publicKeyCh,
+  nonceCh,
+  bagDataCh,
   returnCh,
-  uniqueIdCh,
+  bagIdCh,
   registryUriCh,
   revAddressCh,
   registryLookup(`rho:registry:lookup`),
@@ -17,15 +19,19 @@ in {
     The 5 following values must be filled with proper values
   */ 
   // Registry URI of the ERC-1155 contract
-  registryUriCh!!(`rho:id:6kx95szt8xi15n3sykjya7iz6hby5siueh46m8ftt5bqyqq7g1b6pz`) |
+  registryUriCh!!(`rho:id:REGISTRY_URI`) |
   // Unique ID of the token you want to purchase
-  uniqueIdCh!!(0) |
+  bagIdCh!!(BAG_ID) |
   // Per token price, make sure it is accurate
-  priceCh!!(2) |
+  priceCh!!(PRICE) |
+  // Bag data: Any
+  bagDataCh!!(BAG_DATA) |
   // Quantity you want to purchase, make sure enough are available
-  quantityCh!!(4) |
+  quantityCh!!(QUANTITY) |
   // Your public key
   publicKeyCh!!("PUBLIC_KEY") |
+  // A unique nonce to be changed on each operation
+  nonceCh!!("BAG_NONCE") |
 
   registryLookup!(`rho:rchain:revVault`, *revVaultPurseCh) |
 
@@ -45,9 +51,11 @@ in {
         for (
           @(true, *vault) <- vaultCh;
           @publicKey <- publicKeyCh;
-          @uniqueId <- uniqueIdCh;
+          @nonce <- nonceCh;
+          @bagId <- bagIdCh;
           @registryUri <- registryUriCh;
           @price <- priceCh;
+          @bagData <- bagDataCh;
           @quantity <- quantityCh
         ) {
 
@@ -91,10 +99,12 @@ in {
                                 stdout!(("GET ENTRY", *entry)) |
                                 entry!(
                                   {
-                                    "type": "PURCHASE_TOKEN",
+                                    "type": "PURCHASE_TOKENS",
                                     "payload": {
                                       "quantity": quantity,
-                                      "uniqueId": uniqueId,
+                                      "bagId": bagId,
+                                      "data": bagData,
+                                      "nonce": nonce,
                                       "publicKey": publicKey,
                                       "purseRevAddr": purseRevAddr,
                                       "purseAuthKey": purseAuthKey

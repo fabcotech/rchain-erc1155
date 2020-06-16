@@ -1,32 +1,47 @@
-new basket,
+module.exports.createTokensTerm = (
+  registryUri,
+  currentNonce,
+  signature,
+  newNonce,
+  bagNonce,
+  publicKey,
+  n,
+  price,
+  quantity,
+  data
+) => {
+  return {
+    term: `new basket,
   entryCh,
   returnCh,
-  lookup(`rho:registry:lookup`),
-  stdout(`rho:io:stdout`)
+  lookup(\`rho:registry:lookup\`),
+  stdout(\`rho:io:stdout\`)
 in {
 
-  lookup!(`rho:id:apdmwj6kewtrbu4bnqigdkixbru9u5bkmf9xud3r8tshjq9uexoz3t`, *entryCh) |
+  lookup!(\`rho:id:${registryUri}\`, *entryCh) |
 
   for(entry <- entryCh) {
     entry!(
       {
-        "type": "CREATE_TOKEN",
+        "type": "CREATE_TOKENS",
         "payload": {
           // signature of the current nonce, with the private key of the owner (generateSignatureForNonce.js)
-          "signature": "SIGNATURE",
+          "signature": "${signature}",
           // new nonce, must be different and random (generateNonce.js)
-          "newNonce": "NONCE",
+          "newNonce": "${newNonce}",
+          // new nonce for the bag, must be random (generateNonce.js)
+          "bagNonce": "${bagNonce}",
           // per token price, can be Nil if the token is not for sale
-          "price": 2,
+          "price": ${price || "Nil"},
           // The token you create can be a new one ("n" : Nil)
           // or it can be linked to an existing token data (ex: "n": "0")
-          "n": "0",
+          "n": ${typeof n == "string" ? '"' + n + '"' : "Nil"},
           // quantity of tokens to create
-          "quantity": 800,
+          "quantity": ${quantity},
           // publicKey this set of tokens (depending on quantity) will belong to
-          "publicKey": "04b50dbf4e03cf9abe39238086ca74f53a9ec9f1b68efc6376cb0cd88dd263ea7b987c5a0f3c655252abdfac247d8eb76b3c93f95bbc61467a0dc78c8d32a5bbb7", // used only if new token
+          "publicKey": "${publicKey}", // used only if new token
           // data is used only if new token ("n" : Nil)
-          "data": Nil
+          "data": ${data ? '"' + encodeURI(data) + '"' : "Nil"}
         }
       },
       *returnCh
@@ -43,3 +58,7 @@ in {
   basket!({ "status": "completed" })
 
 }
+`,
+    signatures: { SIGN: currentNonce},
+  };
+};

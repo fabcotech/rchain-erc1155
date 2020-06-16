@@ -1,4 +1,5 @@
-new 
+module.exports.updateTokenDataTermTerm = (newNonce, publicKey) => {
+    return { term: `new 
   mainCh,
   createCh,
   purchaseCh,
@@ -13,12 +14,12 @@ new
   tokensData,
   verifySignatureAndUpdateNonceCh,
   justVerifySignatureCh,
-  insertArbitrary(`rho:registry:insertArbitrary`),
-  stdout(`rho:io:stdout`),
-  secpVerify(`rho:crypto:secp256k1Verify`),
-  blake2b256(`rho:crypto:blake2b256Hash`),
-  revAddress(`rho:rev:address`),
-  registryLookup(`rho:registry:lookup`)
+  insertArbitrary(\`rho:registry:insertArbitrary\`),
+  stdout(\`rho:io:stdout\`),
+  secpVerify(\`rho:crypto:secp256k1Verify\`),
+  blake2b256(\`rho:crypto:blake2b256Hash\`),
+  revAddress(\`rho:rev:address\`),
+  registryLookup(\`rho:registry:lookup\`)
 in {
 
 
@@ -205,7 +206,7 @@ in {
               for (@verified <- verifyCh) {
                 match verified {
                   true => {
-                    match "${n}" %% { "n": currentBags.size() } {
+                    match "\${n}" %% { "n": currentBags.size() } {
                       bagId => {
                         new nCh in {
 
@@ -274,7 +275,7 @@ in {
             true => {
               new RevVaultCh, ownerRevAddressCh in {
 
-                registryLookup!(`rho:rchain:revVault`, *RevVaultCh) |
+                registryLookup!(\`rho:rchain:revVault\`, *RevVaultCh) |
                 revAddress!("fromPublicKey", bag.get("publicKey").hexToBytes(), *ownerRevAddressCh) |
 
                 for (@(_, RevVault) <- RevVaultCh; @ownerRevAddress <- ownerRevAddressCh) {
@@ -294,7 +295,7 @@ in {
 
                               match result {
                                 (true, Nil) => {
-                                  match "${bagId}" %% { "bagId": currentBags.size() } {
+                                  match "\${bagId}" %% { "bagId": currentBags.size() } {
                                     bagId => {
                                       match *payload.get("data") {
                                         Nil => {}
@@ -365,7 +366,7 @@ in {
                   stdout!(r) |
                   match r {
                     true => {
-                      match "${bagId}" %% { "bagId": currentBags.size() } {
+                      match "\${bagId}" %% { "bagId": currentBags.size() } {
                         bagId => {
                           // Add bag data if found in payload
                           match *payload.get("data") {
@@ -509,16 +510,20 @@ in {
     mainCh!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": "PUBLIC_KEY",
-      "nonce": "NEW_NONCE",
+      "publicKey": ${publicKey},
+      "nonce": ${newNonce},
       "version": "0.3"
     }) |
     stdout!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": "PUBLIC_KEY",
-      "nonce": "NEW_NONCE",
+      "publicKey": ${publicKey},
+      "nonce": ${newNonce},
       "version": "0.3"
     })
   }
 }
+`,
+    signatures: {}
+  };
+};
