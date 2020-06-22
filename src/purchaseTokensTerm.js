@@ -1,5 +1,5 @@
 
-module.exports.createTokenTerm = (
+module.exports.purchaseTokensTerm = (
   registryUri,
   bagId,
   price,
@@ -8,8 +8,7 @@ module.exports.createTokenTerm = (
   publicKey,
   bagNonce
 ) => {
-  return {
-    term: `
+  return `
 new
   revVaultPurseCh,
   priceCh,
@@ -32,7 +31,7 @@ in {
   // Registry URI of the ERC-1155 contract
   registryUriCh!!(\`rho:id:${registryUri}\`) |
   // Unique ID of the token you want to purchase
-  bagIdCh!!(${bagId}) |
+  bagIdCh!!("${bagId}") |
   // Per token price, make sure it is accurate
   priceCh!!(${price || "Nil"}) |
   // Bag data: Any
@@ -149,7 +148,5 @@ in {
     }
   }
 }
-`,
-    signatures: {}
-  };
+`;
 };

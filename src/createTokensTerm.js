@@ -1,6 +1,5 @@
 module.exports.createTokensTerm = (
   registryUri,
-  currentNonce,
   signature,
   newNonce,
   bagNonce,
@@ -10,8 +9,7 @@ module.exports.createTokensTerm = (
   quantity,
   data
 ) => {
-  return {
-    term: `new basket,
+  return `new basket,
   entryCh,
   returnCh,
   lookup(\`rho:registry:lookup\`),
@@ -58,7 +56,5 @@ in {
   basket!({ "status": "completed" })
 
 }
-`,
-    signatures: { SIGN: currentNonce},
-  };
+`;
 };

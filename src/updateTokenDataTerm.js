@@ -1,12 +1,10 @@
-module.exports.updateTokenDataTermTerm = (
+module.exports.updateTokenDataTerm = (
   registryUri,
-  currentNonce,
   newNonce,
   n,
   data    
 ) => {
-  return {
-    term: `new basket,
+  return `new basket,
   entryCh,
   returnCh,
   lookup(\`rho:registry:lookup\`),
@@ -44,7 +42,5 @@ in {
   basket!({ "status": "completed" })
 
 }
-`,
-    signatures: { SIGN: currentNonce }
-  };
+`;
 };

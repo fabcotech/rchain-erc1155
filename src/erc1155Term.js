@@ -1,5 +1,5 @@
-module.exports.updateTokenDataTermTerm = (newNonce, publicKey) => {
-    return { term: `new 
+module.exports.erc1155Term = (newNonce, publicKey) => {
+    return `new 
   mainCh,
   createCh,
   purchaseCh,
@@ -8,6 +8,7 @@ module.exports.updateTokenDataTermTerm = (newNonce, publicKey) => {
   entryUriCh,
   setLockedCh,
   updateTokenDataCh,
+  updateBagDataCh,
   updateUriCh,
   bags,
   bagsData,
@@ -27,8 +28,8 @@ in {
     bags: {
       [bagId: String (incremental id)]: {
         publicKey: String (public key),
-        n: Nil \/ String (token id),
-        price: Nil \/ Int
+        n: Nil \\/ String (token id),
+        price: Nil \\/ Int
         quantity: Int
       }
     }
@@ -37,7 +38,7 @@ in {
 
   /*
     bagsData: {
-      [n: String (bag id)]: Any
+      [bagId: String (bag id)]: Any
     }
   */
   bagsData!({/*DEFAULT_BAGS_DATA*/}) |
@@ -175,6 +176,42 @@ in {
                 }
                 err => {
                   return!(err)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  contract updateBagDataCh(payload, return) = {
+    stdout!("updateBagDataCh") |
+    for (@currentBags <<- bags) {
+      match currentBags.get(*payload.get("bagId")) {
+        Nil => {
+          return!("error : token (bag ID) " ++ *payload.get("bagId") ++ " does not exist")
+        }
+        bag => {
+          new verifyCh in {
+            justVerifySignatureCh!((
+              bag.get("publicKey"),
+              *payload.get("signature"),
+              bag.get("nonce"),
+              *verifyCh
+            )) |
+            for (@verified <- verifyCh) {
+              match verified {
+                true => {
+                  for (@currentBagsData <- bagsData) {
+                    bagsData!(
+                      currentBagsData.set(*payload.get("bagId"), *payload.get("data"))
+                    ) |
+                    return!(true)
+                  }
+                }
+                err => {
+                  return!("error: Invalid signature, could not perform operation")
                 }
               }
             }
@@ -457,6 +494,16 @@ in {
           }
         }
       }
+      "UPDATE_BAG_DATA" => {
+        match *action.get("payload") {
+          { "signature": String, "newNonce": String, "bagId": String, "data": _ } => {
+            updateBagDataCh!(*action.get("payload"), *return)
+          }
+          _ => {
+            return!("error: invalid payload, structure should be { 'signature': String, 'newNonce': String, 'bagId': String, 'data': _ }")
+          }
+        }
+      }
       "CREATE_TOKENS" => {
         match *action.get("payload") {
           {
@@ -465,8 +512,8 @@ in {
             "bagNonce": String,
             "quantity": Int,
             "publicKey": String,
-            "price": Nil \/ Int,
-            "n": Nil \/ String,
+            "price": Nil \\/ Int,
+            "n": Nil \\/ String,
             "data": _
           } => {
             createCh!(*action.get("payload"), *return)
@@ -483,7 +530,7 @@ in {
             purchaseCh!(*action.get("payload"), *return)
           }
           _ => {
-            return!("error: invalid payload, structure should be { 'quantity': Int, 'n': Int, 'publicKey': String, 'data': Any }")
+            return!("error: invalid payload, structure should be { 'quantity': Int, 'bagId': String, 'publicKey': String, 'nonce': String, 'data': Any, 'purseRevAddr': String, 'purseAuthKey': AuthKey }")
           }
         }
       }
@@ -510,20 +557,20 @@ in {
     mainCh!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": ${publicKey},
-      "nonce": ${newNonce},
+      "publicKey": "${publicKey}",
+      "nonce": "${newNonce}",
       "version": "0.3"
     }) |
     stdout!({
       "registryUri": *entryUri,
       "locked": false,
-      "publicKey": ${publicKey},
-      "nonce": ${newNonce},
+      "publicKey": "${publicKey}",
+      "nonce": "${newNonce}",
       "version": "0.3"
     })
+
+    /*OUTPUT_CHANNEL*/
   }
 }
-`,
-    signatures: {}
-  };
+`;
 };

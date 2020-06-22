@@ -9,6 +9,7 @@ const replaceEverything = (a) => {
     a
       .replace(/`/g, "\\`")
       .replace(/\$\{/g, "\\${")
+      .replace(/\\\//g, "\\\\/")
       .replace("REGISTRY_URI", "${registryUri}")
       .replace("SIGNATURE", "${signature}")
       .replace(
@@ -22,7 +23,15 @@ const replaceEverything = (a) => {
       .replace("PUBLIC_KEY", "${publicKey}")
       .replace("BAG_ID", "${bagId}")
       .replace("TOKEN_ID", "${tokenId}")
-      .replace("BAG_DATA", "${data ? '\"' + encodeURI(data) + '\"' : \"Nil\"}")
+      // some function name end with BAG_DATA
+      .replace(
+        ": BAG_DATA",
+        ": ${data ? '\"' + encodeURI(data) + '\"' : \"Nil\"}"
+      )
+      .replace(
+        "(BAG_DATA)",
+        "(${data ? '\"' + encodeURI(data) + '\"' : \"Nil\"})"
+      )
       // some function name end with _DATA
       .replace(": DATA", ": ${data ? '\"' + encodeURI(data) + '\"' : \"Nil\"}")
   );
@@ -31,7 +40,6 @@ fs.writeFileSync(
   "./src/createTokensTerm.js",
   `module.exports.createTokensTerm = (
   registryUri,
-  currentNonce,
   signature,
   newNonce,
   bagNonce,
@@ -41,10 +49,7 @@ fs.writeFileSync(
   quantity,
   data
 ) => {
-  return {
-    term: \`${replaceEverything(createTokensFile)}\`,
-    signatures: { SIGN: currentNonce},
-  };
+  return \`${replaceEverything(createTokensFile)}\`;
 };`
 );
 
@@ -55,7 +60,7 @@ const purchaseTokensFile = fs
 fs.writeFileSync(
   "./src/purchaseTokensTerm.js",
   `
-module.exports.createTokenTerm = (
+module.exports.purchaseTokensTerm = (
   registryUri,
   bagId,
   price,
@@ -64,10 +69,7 @@ module.exports.createTokenTerm = (
   publicKey,
   bagNonce
 ) => {
-  return {
-    term: \`${replaceEverything(purchaseTokensFile)}\`,
-    signatures: {}
-  };
+  return \`${replaceEverything(purchaseTokensFile)}\`;
 };
 `
 );
@@ -76,10 +78,8 @@ const setLockedFile = fs.readFileSync("./set_locked.rho").toString("utf8");
 
 fs.writeFileSync(
   "./src/setLockedTerm.js",
-  `module.exports.setLockedTerm = (registryUri, currentNonce, newNonce, signature) => {
-  return { term: \`${replaceEverything(setLockedFile)}\`,
-  signatures: { SIGN: currentNonce }
-};
+  `module.exports.setLockedTerm = (registryUri, newNonce, signature) => {
+  return \`${replaceEverything(setLockedFile)}\`;
 };`
 );
 
@@ -89,17 +89,30 @@ const updateTokenDataFile = fs
 
 fs.writeFileSync(
   "./src/updateTokenDataTerm.js",
-  `module.exports.updateTokenDataTermTerm = (
+  `module.exports.updateTokenDataTerm = (
   registryUri,
-  currentNonce,
   newNonce,
   n,
   data    
 ) => {
-  return {
-    term: \`${replaceEverything(updateTokenDataFile)}\`,
-    signatures: { SIGN: currentNonce }
-  };
+  return \`${replaceEverything(updateTokenDataFile)}\`;
+};`
+);
+
+const updateBagDataFile = fs
+  .readFileSync("./update_bag_data.rho")
+  .toString("utf8");
+
+fs.writeFileSync(
+  "./src/updateBagDataTerm.js",
+  `module.exports.updateBagDataTerm = (
+  registryUri,
+  newNonce,
+  signature,
+  bagId,
+  data
+) => {
+  return \`${replaceEverything(updateBagDataFile)}\`;
 };`
 );
 
@@ -116,10 +129,7 @@ fs.writeFileSync(
   bagId,
   data    
 ) => {
-  return {
-    term: \`${replaceEverything(sendTokensFile)}\`,
-    signatures: {}
-  };
+  return \`${replaceEverything(sendTokensFile)}\`;
 };`
 );
 
@@ -127,13 +137,12 @@ const erc1155Term = fs.readFileSync("./erc1155.rho").toString("utf8");
 
 fs.writeFileSync(
   "./src/erc1155Term.js",
-  `module.exports.updateTokenDataTermTerm = (newNonce, publicKey) => {
-    return { term: \`${erc1155Term
+  `module.exports.erc1155Term = (newNonce, publicKey) => {
+    return \`${erc1155Term
       .replace(/`/g, "\\`")
+      .replace(/\\\//g, "\\\\/")
       .replace(/\$\{/g, "\\${")
-      .replace(/"NEW_NONCE"/g, "${newNonce}")
-      .replace(/"PUBLIC_KEY"/g, "${publicKey}")}\`,
-    signatures: {}
-  };
+      .replace(/NEW_NONCE/g, "${newNonce}")
+      .replace(/PUBLIC_KEY/g, "${publicKey}")}\`;
 };`
 );

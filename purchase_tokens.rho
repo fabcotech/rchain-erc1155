@@ -21,7 +21,7 @@ in {
   // Registry URI of the ERC-1155 contract
   registryUriCh!!(`rho:id:REGISTRY_URI`) |
   // Unique ID of the token you want to purchase
-  bagIdCh!!(BAG_ID) |
+  bagIdCh!!("BAG_ID") |
   // Per token price, make sure it is accurate
   priceCh!!(PRICE) |
   // Bag data: Any

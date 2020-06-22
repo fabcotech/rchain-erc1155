@@ -7,8 +7,7 @@ module.exports.sendTokensTerm = (
   bagId,
   data    
 ) => {
-  return {
-    term: `new basket,
+  return `new basket,
   entryCh,
   returnCh,
   lookup(\`rho:registry:lookup\`),
@@ -27,7 +26,7 @@ in {
           // new nonce, must be different and random (generateNonce.js)
           "newNonce": "${newNonce}",
           // bag ID (ex: "0")
-          "bagId": ${bagId},
+          "bagId": "${bagId}",
           // quantity of tokens to send
           "quantity": ${quantity},
           // publicKey this send those tokens to (can be the same just split a bag)
@@ -50,7 +49,5 @@ in {
   basket!({ "status": "completed" })
 
 }
-`,
-    signatures: {}
-  };
+`;
 };
