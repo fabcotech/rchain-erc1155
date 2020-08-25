@@ -1,7 +1,8 @@
 module.exports.sendTokensTerm = (
   registryUri,
   signature,
-  newNonce,
+  bagNonce,
+  bagNonce2,
   quantity,
   publicKey,
   bagId,
@@ -24,7 +25,9 @@ in {
           // signature of the current nonce, with the private key of the owner (generateSignatureForNonce.js)
           "signature": "${signature}",
           // new nonce, must be different and random (generateNonce.js)
-          "newNonce": "${newNonce}",
+          "bagNonce": "${bagNonce}",
+          // new nonce for the new bag
+          "bagNonce2": "${bagNonce2}",
           // bag ID (ex: "0")
           "bagId": "${bagId}",
           // quantity of tokens to send

@@ -426,7 +426,12 @@ in {
                               // Udate quantity in seller token ownership
                               }).set(
                                 *payload.get("bagId"),
-                                bag.set("quantity", bag.get("quantity") - *payload.get("quantity"))
+                                bag.set(
+                                  "quantity", bag.get("quantity") - *payload.get("quantity")
+                                ).set(
+                                  "nonce",
+                                  *payload.get("bagNonce2")
+                                )
                               )
                             )
                           } |
@@ -536,11 +541,11 @@ in {
       }
       "SEND_TOKENS" => {
         match *action.get("payload") {
-          { "quantity": Int, "bagId": String, "publicKey": String, "signature": String, "bagNonce": String, "data": _, } => {
+          { "quantity": Int, "bagId": String, "publicKey": String, "signature": String, "bagNonce": String, "bagNonce2": String, "data": _, } => {
             sendCh!(*action.get("payload"), *return)
           }
           _ => {
-            return!("error: invalid payload, structure should be { 'quantity': Int, 'bagId': Int, 'publicKey': String, 'signature': String, 'bagNonce': String, 'data': Any }")
+            return!("error: invalid payload, structure should be { 'quantity': Int, 'bagId': Int, 'publicKey': String, 'signature': String, 'bagNonce': String, 'bagNonce2': String, 'data': Any }")
           }
         }
       }

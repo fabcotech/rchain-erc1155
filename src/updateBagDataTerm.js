@@ -3,7 +3,7 @@ module.exports.updateBagDataTerm = (
   newNonce,
   signature,
   bagId,
-  data    
+  data
 ) => {
   return `new basket,
   entryCh,

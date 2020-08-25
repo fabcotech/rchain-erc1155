@@ -15,7 +15,9 @@ in {
           // signature of the current nonce, with the private key of the owner (generateSignatureForNonce.js)
           "signature": "SIGNATURE",
           // new nonce, must be different and random (generateNonce.js)
-          "newNonce": "NEW_NONCE",
+          "bagNonce": "BAG_NONCE",
+          // new nonce for the new bag
+          "bagNonce2": "BAG_NONCE_2",
           // bag ID (ex: "0")
           "bagId": "BAG_ID",
           // quantity of tokens to send

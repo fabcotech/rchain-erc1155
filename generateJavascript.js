@@ -18,6 +18,7 @@ const replaceEverything = (a) => {
       )
       .replace("NEW_NONCE", "${newNonce}")
       .replace("BAG_NONCE", "${bagNonce}")
+      .replace("BAG_NONCE_2", "${bagNonce2}")
       .replace("PRICE", '${price || "Nil"}')
       .replace("QUANTITY", "${quantity}")
       .replace("PUBLIC_KEY", "${publicKey}")
@@ -123,7 +124,8 @@ fs.writeFileSync(
   `module.exports.sendTokensTerm = (
   registryUri,
   signature,
-  newNonce,
+  bagNonce,
+  bagNonce2,
   quantity,
   publicKey,
   bagId,
