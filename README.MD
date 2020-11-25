@@ -14,38 +14,38 @@ Aliases: You can use `-r` option instead of `--registry-uri`
 
 ```
 # Deploy a new empty ERC-1155 contract
-node index.js deploy
+node cli deploy
 ```
 
 After having first deployed you can see the registry URI, this is the identifier of the ERC-1155 contract on the blockchain.
 
 ```
 # Check contract's public key, nonce, locked true/false, and bags
-node index.js view --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4
+node cli view --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4
 ```
 
 ```
 # Lock contract, no token will ever be created in this contract anymore
-node index.js lock --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4 --contract-nonce daece708505d4caea40dbf5dc3e0fc84
+node cli lock --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4 --contract-nonce daece708505d4caea40dbf5dc3e0fc84
 ```
 
 ```
 # Create tokens
 # If --token-id is not given, a new token id will be created
 # If --price is not given, the tokens won't be for sale
-node index.js create-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4 --contract-nonce daece708505d4caea40dbf5dc3e0fc84 --price 100 --quantity 30  --token-id 0
+node cli create-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4 --contract-nonce daece708505d4caea40dbf5dc3e0fc84 --price 100 --quantity 30  --token-id 0
 ```
 
 ```
 # Purchase tokens from a bag
 # If --price is not given, the tokens won't be for sale
-node index.js purchase-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4  --price 100 --bag 0 --quantity 3
+node cli purchase-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eor7mzayf4gdkmdywtbe4  --price 100 --bag 0 --quantity 3
 ```
 
 ```
 # Send tokens, which is equal to splitting a bag into two bags
 # --nonce is the bag nonce, not the contract nonce
-node index.js send-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eo --nonce 1f4c20f6b3ec42f0a2c2d6980c6a8ac8 --bag 0 --quantity 7 --public-key aaa
+node cli send-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eo --nonce 1f4c20f6b3ec42f0a2c2d6980c6a8ac8 --bag 0 --quantity 7 --public-key aaa
 ```
 
 Missing in CLI: playing with token data and bag data, changing price of a bag of tokens
