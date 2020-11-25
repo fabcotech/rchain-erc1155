@@ -1,6 +1,8 @@
-#### Rholang (RChain) ERC-1155 (vO.3)
+#### Rholang (RChain) ERC-1155 (v0.3)
 
-Rholang (RChain) implementation of the ERC-1155 standard .
+Fungibles and non-fungibles tokens on the RChain blockchain. Includes buy/sell capabilities by default, metadata that can be associated to a token type (ex: pizza), or a specific set of tokens (pizza n°1021).
+
+This repo includes a CLI so you can very quickly start playing with ERC-1155 contract, and SDK that you can integrate in any javascript application.
 
 ![Woods](https://images.pexels.com/photos/640809/pexels-photo-640809.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=300)
 
@@ -46,9 +48,29 @@ node index.js purchase-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eo
 node index.js send-tokens --registry-uri 6yt475hd3qdmxuwnzktidtr4wsxsa6be4eo --nonce 1f4c20f6b3ec42f0a2c2d6980c6a8ac8 --bag 0 --quantity 7 --public-key aaa
 ```
 
-Missing in CLI: playing with token data and bag data
+Missing in CLI: playing with token data and bag data, changing price of a bag of tokens
 
-#### Compile for javascript
+#### Using SDK
+
+The SDK files are in `./src`, if you have rchain-erc1155 (`fabcotech/rchain-erc1155`) as a dependency of your project, you should be able to use them very easily.
+
+```
+import {
+  erc1155Term,
+} from "rchain-erc1155";
+const uuidv4 = require("uuid/v4");
+
+const publicKey = 'aaa';
+const nonce = uuidv4().replace(/-/g, "");
+const rholangTerm = erc1155Term(
+  nonce,
+  publicKey
+)
+```
+
+Missing in CLI: changing price of a bag of tokens
+
+#### Compile rholang -> javascript (src/)
 
 _Generate all javascript source code in `src/` from rholang with `node generateJavascripts.js`
 
