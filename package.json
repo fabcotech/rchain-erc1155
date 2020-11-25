@@ -1,6 +1,6 @@
 {
   "name": "rchain-erc1155",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Rholang (RChain) implementation of the ERC-1155 standard .",
   "main": "src/index.js",
   "scripts": {},
@@ -9,13 +9,14 @@
     "url": "git+https://github.com/fabcotech/rchain-erc1155.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/fabcotech/rchain-erc1155/issues"
   },
   "homepage": "https://github.com/fabcotech/rchain-erc1155#readme",
   "dependencies": {
     "rchain-toolkit": "0.2.6",
-    "uuid": "3.4.0"
+    "uuid": "3.4.0",
+    "dotenv": "6.2.0"
   }
 }

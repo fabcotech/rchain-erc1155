@@ -1,2 +1,5 @@
 node_modules
 .directory
+.env
+bags-*
+.metals
